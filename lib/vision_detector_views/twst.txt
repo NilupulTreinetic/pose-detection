@@ -1,0 +1,21 @@
+ // Combine processed frames back into a video
+        // await FFmpegKit.execute(
+        //         '-framerate 10 -i $_tempDir/frame_%03d.png -y $_outputVideoPath')
+        //     .then((session) {
+        //   if (ReturnCode.isSuccess(returnCode)) {
+        //     print("Successes");
+        // Directory directory = Directory(_tempDir!);
+        // List<FileSystemEntity> files = directory.listSync();
+        // for (FileSystemEntity file in files) {
+        //   if (file is File) {
+        //     // Add file name to the list
+        //     print("ddaffafdddddf${file.path}");
+        //   }
+        // }
+
+        //   print(
+        //       'current duration---${_controller.value.position.inMilliseconds}');
+        // } else {
+        //   print("Error");
+        // }
+        // });

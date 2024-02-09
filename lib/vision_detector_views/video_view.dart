@@ -6,8 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:ui' as ui;
-import 'dart:io';
 
 class VideoView extends StatefulWidget {
   final File video;
@@ -31,8 +29,14 @@ class _VideoViewState extends State<VideoView> {
   @override
   void initState() {
     super.initState();
+    initPath();
     plyVideo();
-    // initPaths();
+  }
+
+  initPath() async {
+    _tempDir = (await getExternalStorageDirectory())?.path;
+    _inputVideoPath = widget.video.absolute.path;
+    setState(() {});
   }
 
   plyVideo() {
@@ -43,72 +47,35 @@ class _VideoViewState extends State<VideoView> {
           isvideoLoaded = true;
         });
       });
+
     _controller.addListener(() {
       print('current duration---${_controller.value.position.inMilliseconds}');
+      if (_controller.value.position.inMilliseconds == 0) return;
       processVideo(_controller.value.position.inMilliseconds);
     });
   }
 
-  Future<void> initPaths() async {
-    // Get the temporary directory path
-    _tempDir = (await getTemporaryDirectory()).path;
-    setState(() {
-      _inputVideoPath = widget.video.absolute.path;
-    });
-
-    _outputVideoPath = '$_tempDir/output.mp4';
-    print("input video path---$_inputVideoPath");
-  }
-
   Future<void> processVideo(int currentTime) async {
-    initPaths();
     // Extract frames from input video
     await FFmpegKit.execute(
-            '-i $_inputVideoPath -r 10 -ss ${currentTime ~/ 1000} -vframes 1 -f image2 $_tempDir/frame_%03d.png')
+            '-i $_inputVideoPath -ss ${currentTime ~/ 1000} -vframes 1 -f image2 $_tempDir/frame_$currentTime.png')
         .then((session) async {
       final returnCode = await session.getReturnCode();
       if (ReturnCode.isSuccess(returnCode)) {
         // SUCCESS
-        List<File> processedFrames = [];
-        for (int i = 1;; i++) {
-          File frameFile =
-              File('$_tempDir/frame_${i.toString().padLeft(3, '0')}.png');
-          if (!frameFile.existsSync()) break;
-          processedFrames.add(frameFile);
-        }
-        print("processed Frames---${processedFrames.length}");
-        // Combine processed frames back into a video
-        // await FFmpegKit.execute(
-        //         '-framerate 10 -i $_tempDir/frame_%03d.png -y $_outputVideoPath')
-        //     .then((session) {
-        //   if (ReturnCode.isSuccess(returnCode)) {
-        //     print("Successes");
-        // Directory directory = Directory(_tempDir!);
-        // List<FileSystemEntity> files = directory.listSync();
-        // for (FileSystemEntity file in files) {
-        //   if (file is File) {
-        //     // Add file name to the list
-        //     print("ddaffafdddddf${file.path}");
-        //   }
-        // }
 
-        //   print(
-        //       'current duration---${_controller.value.position.inMilliseconds}');
-        // } else {
-        //   print("Error");
-        // }
-        // });
+        File frameFile = File('$_tempDir/frame_$currentTime.png');
+        if (!frameFile.existsSync()) return;
+        print("processed Frames exist---${frameFile.existsSync()}");
+
       } else if (ReturnCode.isCancel(returnCode)) {
         // CANCEL
       } else {
         final failStackTrace = await session.getArguments();
         print("error----${failStackTrace}");
-
         // ERROR
       }
     });
-
-    // Process each frame (add custom drawings)
   }
 
   Future<InputImage?> _inputImageFromCameraImage(String imagePath) async {
@@ -126,7 +93,6 @@ class _VideoViewState extends State<VideoView> {
 
   @override
   Widget build(BuildContext context) {
-    print('$_tempDir');
     return Scaffold(
         body: Center(
           child: isvideoLoaded
@@ -153,7 +119,6 @@ class _VideoViewState extends State<VideoView> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            // initPaths();
             if (isvideoLoaded) {
               setState(() {
                 _controller.value.isPlaying
