@@ -39,12 +39,14 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   }
 
   Future<void> _processImage(InputImage inputImage) async {
+    print("call input imagee---nwdhdhdhd2222222222vbvbvbvbvb");
     if (!_canProcess) return;
     if (_isBusy) return;
     _isBusy = true;
     setState(() {
       _text = '';
     });
+    print("call input imagee---nvbvbvbvbvbvbvbvbvbvbvbvb");
     final poses = await _poseDetector.processImage(inputImage);
     poses.forEach((element) {
       print("landmarks---->${element.landmarks}");

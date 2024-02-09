@@ -49,7 +49,8 @@ class _VideoViewState extends State<VideoView> {
         });
       });
     _controller.addListener(() {
-      print('current duration---${_controller.value.position.inMilliseconds}');
+      print(
+          'current duration---${_controller.value.position.inMilliseconds ~/ 1000}');
       if (_controller.value.position.inMilliseconds == 0) return;
       processVideo(_controller.value.position.inMilliseconds);
     });
@@ -58,47 +59,54 @@ class _VideoViewState extends State<VideoView> {
   Future<void> processVideo(int currentTime) async {
     // Extract frames from input video
     if (imageProcessing) return;
-    setState(() {
-      imageProcessing = true;
-    });
+    imageProcessing = true;
     await FFmpegKit.execute(
             '-i $_inputVideoPath -ss ${currentTime ~/ 1000} -vframes 1 -f image2 $_tempDir/frame_$currentTime.png')
         .then((session) async {
       final returnCode = await session.getReturnCode();
+      print(
+          "hhehehehehehehehehheheheheheh-------${await session.getDuration()}");
       if (ReturnCode.isSuccess(returnCode)) {
         // SUCCESS
         File frameFile = File('$_tempDir/frame_$currentTime.png');
         if (!frameFile.existsSync()) return;
         print("processed Frames exist---${frameFile.existsSync()}");
         InputImage? inputImage = await _inputImageFromCameraImage(frameFile);
-        print("---dndfbfbfb${inputImage != null}");
+
         if (inputImage != null) {
           widget.onImage(inputImage);
         }
+        imageProcessing = false;
       } else if (ReturnCode.isCancel(returnCode)) {
+        // setState(() {
+        imageProcessing = false;
+        // });
         // CANCEL
       } else {
         final failStackTrace = await session.getArguments();
         print("error----${failStackTrace}");
+        // setState(() {
+        imageProcessing = false;
+        // });
         // ERROR
       }
-    });
-    setState(() {
-      imageProcessing = false;
     });
   }
 
   Future<InputImage?> _inputImageFromCameraImage(File image) async {
-    Uint8List bytes = await image.readAsBytes();
-    return InputImage.fromBytes(
-      bytes: bytes,
-      metadata: InputImageMetadata(
-        size: Size(1200, 900),
-        rotation: InputImageRotation.rotation0deg, // used only in Android
-        format: InputImageFormat.bgra8888, // used only in iOS
-        bytesPerRow: 1, // used only in iOS
-      ),
-    );
+    // Uint8List bytes = await image.readAsBytes();
+    // var decodedImage = await decodeImageFromList(image.readAsBytesSync());
+    return InputImage.fromFilePath(image.path);
+    // return InputImage.fromBytes(
+    //   bytes: bytes,
+    //   metadata: InputImageMetadata(
+    //     size:
+    //         Size(decodedImage.width.toDouble(), decodedImage.height.toDouble()),
+    //     rotation: InputImageRotation.rotation0deg, // used only in Android
+    //     format: InputImageFormat.nv21, // used only in iOS
+    //     bytesPerRow: 1, // used only in iOS
+    //   ),
+    // );
   }
 
   @override
