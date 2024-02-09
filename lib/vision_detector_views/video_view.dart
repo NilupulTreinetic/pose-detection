@@ -25,6 +25,7 @@ class _VideoViewState extends State<VideoView> {
   String? _inputVideoPath;
   String? _outputVideoPath;
   bool isvideoLoaded = false;
+  bool imageProcessing = false;
 
   @override
   void initState() {
@@ -47,7 +48,6 @@ class _VideoViewState extends State<VideoView> {
           isvideoLoaded = true;
         });
       });
-
     _controller.addListener(() {
       print('current duration---${_controller.value.position.inMilliseconds}');
       if (_controller.value.position.inMilliseconds == 0) return;
@@ -57,17 +57,24 @@ class _VideoViewState extends State<VideoView> {
 
   Future<void> processVideo(int currentTime) async {
     // Extract frames from input video
+    if (imageProcessing) return;
+    setState(() {
+      imageProcessing = true;
+    });
     await FFmpegKit.execute(
             '-i $_inputVideoPath -ss ${currentTime ~/ 1000} -vframes 1 -f image2 $_tempDir/frame_$currentTime.png')
         .then((session) async {
       final returnCode = await session.getReturnCode();
       if (ReturnCode.isSuccess(returnCode)) {
         // SUCCESS
-
         File frameFile = File('$_tempDir/frame_$currentTime.png');
         if (!frameFile.existsSync()) return;
         print("processed Frames exist---${frameFile.existsSync()}");
-
+        InputImage? inputImage = await _inputImageFromCameraImage(frameFile);
+        print("---dndfbfbfb${inputImage != null}");
+        if (inputImage != null) {
+          widget.onImage(inputImage);
+        }
       } else if (ReturnCode.isCancel(returnCode)) {
         // CANCEL
       } else {
@@ -76,10 +83,13 @@ class _VideoViewState extends State<VideoView> {
         // ERROR
       }
     });
+    setState(() {
+      imageProcessing = false;
+    });
   }
 
-  Future<InputImage?> _inputImageFromCameraImage(String imagePath) async {
-    Uint8List bytes = await File(imagePath).readAsBytes();
+  Future<InputImage?> _inputImageFromCameraImage(File image) async {
+    Uint8List bytes = await image.readAsBytes();
     return InputImage.fromBytes(
       bytes: bytes,
       metadata: InputImageMetadata(
