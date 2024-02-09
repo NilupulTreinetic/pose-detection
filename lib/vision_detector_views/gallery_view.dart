@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'utils.dart';
+import 'video_view.dart';
 
 class GalleryView extends StatefulWidget {
   GalleryView(
@@ -14,11 +17,13 @@ class GalleryView extends StatefulWidget {
       required this.title,
       this.text,
       required this.onImage,
+      this.customPaint,
       required this.onDetectorViewModeChanged})
       : super(key: key);
 
   final String title;
   final String? text;
+  final CustomPaint? customPaint;
   final Function(InputImage inputImage) onImage;
   final Function()? onDetectorViewModeChanged;
 
@@ -28,6 +33,7 @@ class GalleryView extends StatefulWidget {
 
 class _GalleryViewState extends State<GalleryView> {
   File? _image;
+  File? _video;
   String? _path;
   ImagePicker? _imagePicker;
 
@@ -61,20 +67,36 @@ class _GalleryViewState extends State<GalleryView> {
   Widget _galleryBody() {
     return ListView(shrinkWrap: true, children: [
       _image != null
-          ? SizedBox(
-              height: 400,
-              width: 400,
+          ? Container(
               child: Stack(
-                fit: StackFit.expand,
+                // fit: StackFit.expand,
                 children: <Widget>[
-                  Image.file(_image!),
+                  Image.file(
+                    _image!,
+                  ),
+                  if (widget.customPaint != null)
+                    Positioned(
+                        bottom: 0,
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: widget.customPaint!)
                 ],
               ),
             )
-          : Icon(
-              Icons.image,
-              size: 200,
-            ),
+          : _video != null
+              ? SizedBox(
+                  height: 500,
+                  child: VideoView(
+                    video: _video!,
+                    onImage: widget.onImage,
+                    customPaint: widget.customPaint,
+                  ),
+                )
+              : Icon(
+                  Icons.image,
+                  size: 200,
+                ),
       Padding(
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: ElevatedButton(
@@ -100,7 +122,7 @@ class _GalleryViewState extends State<GalleryView> {
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: ElevatedButton(
           child: Text('Take a video'),
-          onPressed: () => _getImage(ImageSource.camera),
+          onPressed: () => _getVideo(),
         ),
       ),
       if (_image != null)
@@ -120,6 +142,21 @@ class _GalleryViewState extends State<GalleryView> {
     final pickedFile = await _imagePicker?.pickImage(source: source);
     if (pickedFile != null) {
       _processFile(pickedFile.path);
+    }
+  }
+
+  Future _getVideo() async {
+    setState(() {
+      _image = null;
+      _path = null;
+    });
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    if (result != null) {
+      _video = File(result.files.single.path!);
+      print("video path---${result.files.single.path!}");
+      setState(() {});
+    } else {
+      // User canceled the picker
     }
   }
 
@@ -186,7 +223,29 @@ class _GalleryViewState extends State<GalleryView> {
       _image = File(path);
     });
     _path = path;
+    Size imgSize = await getImageSize(_image!);
+    print("---nnvnvnvddddddn$imgSize");
     final inputImage = InputImage.fromFilePath(path);
     widget.onImage(inputImage);
+  }
+
+  Future<Size> getImageSize(File imageFile) async {
+    final Completer<Size> completer = Completer<Size>();
+
+    final Image image = Image.file(imageFile);
+    image.image.resolve(ImageConfiguration()).addListener(
+      ImageStreamListener(
+        (ImageInfo imageInfo, bool synchronousCall) {
+          final Size size = Size(
+            imageInfo.image.width.toDouble(),
+            imageInfo.image.height.toDouble(),
+          );
+          completer.complete(
+              size); // Resolve the completer with the image dimensions
+        },
+      ),
+    );
+
+    return completer.future; // Return a Future<Size> with the image dimensions
   }
 }

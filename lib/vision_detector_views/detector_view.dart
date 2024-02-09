@@ -59,6 +59,7 @@ class _DetectorViewState extends State<DetectorView> {
             title: widget.title,
             text: widget.text,
             onImage: widget.onImage,
+            customPaint: widget.customPaint,
             onDetectorViewModeChanged: _onDetectorViewModeChanged);
   }
 

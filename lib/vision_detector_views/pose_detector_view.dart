@@ -2,7 +2,6 @@ import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
-
 import 'detector_view.dart';
 import 'painters/pose_painter.dart';
 
@@ -47,21 +46,30 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
       _text = '';
     });
     final poses = await _poseDetector.processImage(inputImage);
-    print("------>${inputImage.metadata!= null}");
-    // if (inputImage.metadata?.size != null &&
-    //     inputImage.metadata?.rotation != null) {
-    final painter = PosePainter(
-      poses,
-      inputImage.metadata!.size,
-      inputImage.metadata!.rotation,
-      _cameraLensDirection,
-    );
-    _customPaint = CustomPaint(painter: painter);
-    // } else {
-    //   _text = 'Poses found: ${poses.length}\n\n';
-    //   // TODO: set _customPaint to draw landmarks on top of image
-    //   _customPaint = null;
-    // }
+    poses.forEach((element) {
+      print("landmarks---->${element.landmarks}");
+    });
+    if (inputImage.metadata?.size != null &&
+        inputImage.metadata?.rotation != null) {
+      final painter = PosePainter(
+        poses,
+        inputImage.metadata!.size,
+        inputImage.metadata!.rotation,
+        _cameraLensDirection,
+      );
+      _customPaint = CustomPaint(painter: painter);
+    } else {
+      _text = 'Poses found: ${poses.length}\n\n';
+      // TODO: set _customPaint to draw landmarks on top of image
+      final painter = PosePainter(
+        poses,
+        Size(1200, 900),
+        InputImageRotation.rotation0deg,
+        _cameraLensDirection,
+      );
+      print("${_customPaint}");
+      _customPaint = CustomPaint(painter: painter);
+    }
     _isBusy = false;
     if (mounted) {
       setState(() {});

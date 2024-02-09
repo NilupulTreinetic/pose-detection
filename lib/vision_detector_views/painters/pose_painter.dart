@@ -36,6 +36,7 @@ class PosePainter extends CustomPainter {
 
     for (final pose in poses) {
       pose.landmarks.forEach((_, landmark) {
+        print("------${landmark.x}----${landmark.y}");
         canvas.drawCircle(
             Offset(
               translateX(
@@ -59,6 +60,7 @@ class PosePainter extends CustomPainter {
 
       void paintLine(
           PoseLandmarkType type1, PoseLandmarkType type2, Paint paintType) {
+        print("draw lines---------.>dnvvmv");
         final PoseLandmark joint1 = pose.landmarks[type1]!;
         final PoseLandmark joint2 = pose.landmarks[type2]!;
         canvas.drawLine(
