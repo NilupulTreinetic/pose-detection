@@ -72,6 +72,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
       print("${_customPaint}");
       _customPaint = CustomPaint(painter: painter);
     }
+
     _isBusy = false;
     if (mounted) {
       setState(() {});
